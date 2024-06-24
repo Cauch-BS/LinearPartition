@@ -5,8 +5,6 @@
  author: Kai Zhao, Dezhong Deng
  edited by: 02/2018
 */
-
-
 #ifndef FASTCKY_W
 #define FASTCKY_W
 double multi_base = -1.199055076;

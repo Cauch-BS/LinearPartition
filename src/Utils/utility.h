@@ -14,6 +14,7 @@
 #include <assert.h>
 
 #include "feature_weight.h"
+#include "eternafold_weight.h"
 
 #define INF 1000000007
 

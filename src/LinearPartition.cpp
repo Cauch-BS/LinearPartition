@@ -31,7 +31,9 @@
 
 using namespace std;
 
-unsigned long quickselect_partition(vector<pair<pf_type, int>>& scores, unsigned long lower, unsigned long upper) {
+unsigned long quickselect_partition(vector<pair<pf_type, int>>& scores, 
+                                    unsigned long lower, 
+                                    unsigned long upper) {
     pf_type pivot = scores[upper].first;
     while (lower < upper) {
         while (scores[lower].first < pivot) ++lower;
@@ -43,7 +45,10 @@ unsigned long quickselect_partition(vector<pair<pf_type, int>>& scores, unsigned
 }
 
 // in-place quick-select
-pf_type quickselect(vector<pair<pf_type, int>>& scores, unsigned long lower, unsigned long upper, unsigned long k) {
+pf_type quickselect(vector<pair<pf_type, int>>& scores, 
+                    unsigned long lower, 
+                    unsigned long upper, 
+                    unsigned long k) {
     if ( lower == upper ) return scores[lower].first;
     unsigned long split = quickselect_partition(scores, lower, upper);
     unsigned long length = split - lower + 1;
