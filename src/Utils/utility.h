@@ -52,9 +52,9 @@ void initialize_cachesingle()
 
                 // bulge
             else if (l1 == 0)
-                cache_single[l1][l2] += bulge_length[l2];
+                cache_single[l1][l2] += Default::bulge_length[l2];
             else if (l2 == 0)
-                cache_single[l1][l2] += bulge_length[l1];
+                cache_single[l1][l2] += Eterna::bulge_length[l1];
             else
             {
 
