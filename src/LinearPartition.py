@@ -389,24 +389,41 @@ def fast_exp(x):
 #----------------------------------------------------------
 #From LinearPartition.cpp
 
-def quickselect_partition(scores :list[(float, int)],
-                          lower: int,
-                          upper: int) -> int:
-    
+def quickselect_partition(scores: list[(float, int)], lower: int, upper: int) -> int:
+    """
+    Partitions the scores list using the Quickselect algorithm.
+    Returns the index of the pivot, given as scores[upper][0].
+    """
     pivot = scores[upper][0]
 
     while lower < upper:
-        while scores[lower][0] < pivot: lower += 1
-        while scores[upper][0] > pivot: upper -= 1
-        if scores[lower][0] == scores[upper][0]: lower += 1
-        elif lower < upper: scores[lower], scores[upper] = scores[upper], scores[lower]
-    
+        while scores[lower][0] < pivot:
+            lower += 1
+        while scores[upper][0] > pivot:
+            upper -= 1
+        if scores[lower][0] == scores[upper][0]:
+            lower += 1
+        elif lower < upper:
+            scores[lower], scores[upper] = scores[upper], scores[lower]
+
     return upper
 
 def quickselect(scores: list[(float, int)], 
                 lower: int, 
                 upper: int, 
                 k: int) -> float:
+    """
+    Selects the kth smallest element from the given list of scores using the quickselect algorithm.
+    
+    Args:
+        scores (list[(float, int)]): The list of scores, where each score is a tuple of a float value and an integer index.
+        lower (int): The lower index of the sublist to consider.
+        upper (int): The upper index of the sublist to consider.
+        k (int): The index of the desired element in the sorted list.
+    
+    Returns:
+        float: The value of the kth smallest element.
+    """
     
     if lower == upper: return scores[lower][0]
     
@@ -849,4 +866,27 @@ class BeamCKYParser:
             self,
             beamstep: dict[int, State], 
     ):
-        self.scores
+        self.scores.clear()
+
+        for i, state in beamstep.items():
+            k = i - 1
+            new_score = self.bestC[k].alpha if k >= 0 else 0 
+            new_alpha = state.alpha + new_score
+            self.scores.append((new_alpha, i))
+        
+        if len(self.scores) <= self.beam: return float('-inf')
+
+        threshold = quickselect(self.scores, 0, len(self.scores) - 1, 
+                                len(self.scores) - self.beam
+                                )
+        
+        for p in self.scores:
+            if p[0] < threshold:
+                del beamstep[p[1]]
+        
+        return threshold
+    
+    def parse(self) -> float:
+        pass
+    
+
