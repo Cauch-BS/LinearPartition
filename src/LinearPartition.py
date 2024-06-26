@@ -389,6 +389,32 @@ def fast_exp(x):
 #----------------------------------------------------------
 #From LinearPartition.cpp
 
+def quickselect_partition(scores :list[(float, int)],
+                          lower: int,
+                          upper: int) -> int:
+    
+    pivot = scores[upper][0]
+
+    while lower < upper:
+        while scores[lower][0] < pivot: lower += 1
+        while scores[upper][0] > pivot: upper -= 1
+        if scores[lower][0] == scores[upper][0]: lower += 1
+        elif lower < upper: scores[lower], scores[upper] = scores[upper], scores[lower]
+    
+    return upper
+
+def quickselect(scores: list[(float, int)], 
+                lower: int, 
+                upper: int, 
+                k: int) -> float:
+    
+    if lower == upper: return scores[lower][0]
+    
+    split = quickselect_partition(scores, lower, upper)
+    
+    if k == split: return scores[k][0]
+    elif k < split: return quickselect(scores, lower, split - 1, k)
+    else: return quickselect(scores, split + 1, upper, k)
 #----------------------------------------------------------
 #From LinearPartition.h
 
@@ -441,6 +467,7 @@ class BeamCKYParser:
         self.if_triloops = []
         self.bestC = [State() for _ in range(self.seq_length)]
         self.nucs = [GET_ACGU_NUM[nuc] for nuc in self.seq]
+        self.scores = []
 
 #----------------------------------------------------------
 #From bpp.cpp
@@ -817,5 +844,9 @@ class BeamCKYParser:
                     beamstepP[i].beta + new_score
                 )
 #----------------------------------------------------------
-
 #From LinearPartition.cpp
+    def beam_prune(
+            self,
+            beamstep: dict[int, State], 
+    ):
+        self.scores
