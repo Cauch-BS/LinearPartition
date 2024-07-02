@@ -43,12 +43,6 @@ def memoize_for_jit(f: Callable) -> Callable:
 
 ### End: Decorators ###
 
-#----------------------------------------------------------
-#import constants
-from .Utils import eternafold_weight as Eterna
-from .Utils import default_weight as Default 
-
-#----------------------------------------------------------
 
 #From utils.h
 GET_ACGU_NUM = lambda x: {'A': 0, 'C': 1, 'G': 2, 'U': 3}.get(x, 4)
@@ -65,21 +59,44 @@ BULGE_MAX_LENGTH = 30
 INTERNAL_MAX_LENGTH = 30
 SYMMETRIC_MAX_LENGTH = 15
 ASYMMETRY_MAX_LENGTH = 28
+MAX_LOOP = 30
 
 class Evaluate:
     def __init__(self, type = "Default", source = "Default") -> None:
-        if source == "Default":
-            self.source = Default
-        elif source == "Eterna":
-            self.source = Eterna
-        else:
-            raise ValueError("Error: Invalid source.")
-        self._HELIX_STACKING = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
-        self._ALLOWED_PAIRS = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
-        self._CACHE_SINGLE = jnp.zeros((SINGLE_MAX_LENGTH + 1, SINGLE_MAX_LENGTH + 1), dtype = float)
-        self.initialize()
-        self.initialize_cachesingle()
-        
+        if type == "Default":
+            #import constants
+            from .Utils import eternafold_weight as Eterna
+            from .Utils import default_weight as Default 
+            if source == "Default":
+                self.source = Default
+            elif source == "Eterna":
+                self.source = Eterna
+            else:
+                raise ValueError("Error: Invalid source.")
+            self._HELIX_STACKING = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
+            self._ALLOWED_PAIRS = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
+            self._CACHE_SINGLE = jnp.zeros((SINGLE_MAX_LENGTH + 1, SINGLE_MAX_LENGTH + 1), dtype = float)
+            self.initialize()
+            self.initialize_cachesingle()
+
+        elif type == "Vienna":
+            #import parameters
+            from .Utils import energy_parameters
+            self.source = energy_parameters
+            self.NUM_TO_NUC = [1, 2, 3, 4, 0, -1]
+            #original code equivalent
+            ##define NUM_TO_NUC(x) (x==-1?-1:((x==4?0:(x+1))))
+            self.NUM_TO_PAIR = jnp.array([
+                [0, 0, 0, 5], #A pairs with U
+                [0, 0, 1, 0], #C pairs with G
+                [0, 2, 0, 3], #G pairs with C and U
+                [6, 0, 4, 0]  #U pairs with A and G
+            ])
+            #original code equivalent
+            ##define NUM_TO_PAIR(x,y) (x==0? (y==3?5:0) : (x==1? (y==2?1:0) : (x==2 ? (y==1?2:(y==3?3:0)) : (x==3 ? (y==2?4:(y==0?6:0)) : 0))))
+            self.NUC_TO_PAIR = jnp.zeros((5, 5)).at[1:, 1:].set(self.NUM_TO_PAIR)
+            #original_code_equvialent
+            ##define NUC_TO_PAIR(x,y) (x==1? (y==4?5:0) : (x==2? (y==3?1:0) : (x==3 ? (y==2?2:(y==4?3:0)) : (x==4 ? (y==3?4:(y==1?6:0)) : 0))))
 
     def initialize_cachesingle(self) -> None:
         for l_1 in range(SINGLE_MIN_LENGTH, SINGLE_MAX_LENGTH + 1):
@@ -311,6 +328,155 @@ class Evaluate:
 
     def score_external_unpaired(self, i: int, j: int):
         return (j - i + 1) * self.source.external_unpaired
+    
+
+    ### END: Junction Scores ###
+
+    ###----------------------------------------------------------###
+
+    #from utility_v.h
+
+    ###BEGIN: Hairpin, Single Nucleotide Scores ###
+    
+    def v_find_stable_hp(self, seq: str, seq_length: int):
+        if_tetraloops = jnp.full(max(seq_length - 5, 0), -1)
+        if_triloops= jnp.full(max(seq_length - 4, 0), -1)
+        if_hexaloops = jnp.full(max(seq_length - 7, 0), -1)
+        for i in range(0, seq_length - 5):
+            if seq[i] == 'C' and seq[i + 5] == 'G':
+                loop = seq[i: i + 6]
+                if loop in self.source.tetraloops:
+                    if_tetraloops[i] = list(self.source.tetraloops.keys()).index(loop)
+        for i in range(0, seq_length - 4):
+            if {seq[i], seq[i + 4]} != {'G', 'C'}:
+                loop = seq[i: i + 5]
+                if loop in self.source.triloops:
+                    if_triloops[i] = list(self.source.triloops.keys()).index(loop)
+        for i in range(0, seq_length - 7):
+            if seq[i] == 'A' and seq[i + 7] == 'U':
+                loop = seq[i: i + 8]
+                if loop in self.source.hexaloops:
+                    if_hexaloops[i] = list(self.source.hexaloops.keys()).index(loop)
+    
+    def v_hairpin_score(self, i: int, j: int,
+                        nuc_i: int, nuc_i_1: int, nuc_1_j: int, nuc_j: int,
+                        tetra_hex_tri_index = -1) -> float:
+        '''Returns the score of a hairpin loop.
+        Configuration Diagram
+        5'- i i_1 ..(hairpin).. 1_j j -3'
+        Original Code Equivalnt: v_score_hairpin''' 
+        size = j - i -1
+        typ = self.NUM_TO_PAIR[nuc_i, nuc_j]
+        #self.NUM_TO_PAIR = jnp.array([
+        #        [0, 0, 0, 5], #A pairs with U
+        #        [0, 0, 1, 0], #C pairs with G
+        #        [0, 2, 0, 3], #G pairs with C and U
+        #        [6, 0, 4, 0]])  #U pairs with A and G
+        pre = self.NUM_TO_NUC[nuc_i_1]
+        #self.NUM_TO_NUC = [1, 2, 3, 4, 0, -1]
+        post = self.NUM_TO_NUC[nuc_1_j]
+
+        energy = self.source.hairpins[size] if size <= HAIRPIN_MAX_LENGTH else self.source.hairpins[HAIRPIN_MAX_LENGTH] + int(
+            self.source.log_mult * jnp.log(size / HAIRPIN_MAX_LENGTH)
+        )
+
+        if size < 3: return energy
+
+        if size == 4 and tetra_hex_tri_index > -1:
+            return list(self.source.tetraloops.values())[tetra_hex_tri_index]
+        elif size == 6 and tetra_hex_tri_index > -1:
+            return list(self.source.hexaloops.values())[tetra_hex_tri_index]
+        elif size == 3:
+            if tetra_hex_tri_index > -1:
+                return list(self.source.triloops.values())[tetra_hex_tri_index]
+            else:
+                energy += self.source.TerminalU if typ > 2 else 0 #typ > 2 if [AU, UA, GU, UG]
+                return energy
+    
+        energy += self.source.hairpin_match[typ][pre][post]
+
+        return energy
+
+    def v_score_single(self, i: int, j: int, p: int, q: int,
+                       nuc_i: int, nuc_i_1: int, nuc_1_j: int, nuc_j: int,
+                       nuc_1_p: int, nuc_p: int, nuc_q: int, nuc_q_1: int) -> float:
+        """
+        Returns the score of a single nucleotide loop.
+        Configuration Diagram
+        5'- i i_1 .... 1_p p -- ⌉
+        3'- j 1_j .... q_1 q -- ⌋ 
+        Original Code Equivalent: v_score_single"""
+
+        pre_5 = self.NUM_TO_NUC[nuc_i_1]
+        post_3 = self.NUM_TO_NUC[nuc_1_j]
+        post_5 = self.NUM_TO_NUC[nuc_1_p]
+        pre_3 = self.NUM_TO_NUC[nuc_q_1]
+        typ_end = self.NUM_TO_PAIR[nuc_i, nuc_j]
+        typ_mid = self.NUM_TO_PAIR[nuc_p, nuc_q]
+        lp_len_1 = p - i - 1
+        lp_len_2 = j - q - 1
+        lp_len_lg, lp_len_st = max(lp_len_1, lp_len_2), min(lp_len_1, lp_len_2)
+
+        if lp_len_lg == 0:
+            #both lp_len_1 and lp_len_2 are 0
+            #Diagram
+            #5'-ip-3'
+            #3'-jq-5'
+            #this constitutes a stack
+            return self.source.stacks[typ_end, typ_mid]
+        
+        if lp_len_st == 0:
+            #one of the loops is 0
+            #Diagram
+            #5'-i....p-3'
+            #...|../
+            #3'-jq-5'
+            #this constitutes a bulge
+            energy = self.source.hairpins[lp_len_lg] if lp_len_lg <= MAX_LOOP else self.source.hairpins[MAX_LOOP] + int(
+                self.source.log_mult * jnp.log(lp_len_lg / MAX_LOOP)
+            )
+            if lp_len_lg == 1: #this is nearly a stack, stack energy should be added
+                energy += self.source.stacks[typ_end, typ_mid]
+            else:
+                if typ_end > 2: energy += self.source.TerminalU
+                if typ_mid > 2: energy += self.source.TerminalU
+        else: 
+            #we have an internal loop
+            if lp_len_st == 1: #this constitutes a 1*n loop 
+                if lp_len_lg == 1: #this is a 1*1 loop
+                    energy = self.source.in_loop_1x1[typ_end, typ_mid, pre_5, post_3]
+                    return energy
+                if lp_len_lg == 2: #this is a 2 * 1 loop
+                    energy = self.source.in_loop_2x1[typ_end, typ_mid, 
+                
+
+
+
+        
+
+
+
+    ###END: Hairpin, Single Nucleotide Scores ###
+
+    ###BEGIN: Multi-Branch Loop Scores ###
+
+    def v_score_multi_stem(): 
+        """Original Code Equvialent: E_MLstem
+        """
+    def v_score_M1(): pass
+    def v_score_multi_unpaired(): pass
+    def v_score_multi(): pass
+
+    ###END: Multi-Branch Loop Scores ###
+
+    ###BEGIN: External Loop Scores ###
+
+    ###END: External Loop Scores ###
+    
+
+
+
+
 
 #----------------------------------------------------------
 
@@ -428,6 +594,7 @@ def quickselect(scores: list[(float, int)],
     if k == split: return scores[k][0]
     elif k < split: return quickselect(scores, lower, split - 1, k)
     else: return quickselect(scores, split + 1, upper, k)
+
 #----------------------------------------------------------
 #From LinearPartition.h
 
@@ -892,7 +1059,7 @@ class BeamCKYParser:
             next = -1
             for j in range(self.seq_length - 1, -1, -1):
                 next_pair[nuc_i][j] = next
-                if evaluate.
+                if evaluate: pass
 
 
         
