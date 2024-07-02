@@ -407,15 +407,15 @@ class Evaluate:
         3'- j 1_j .... q_1 q -- ⌋ 
         Original Code Equivalent: v_score_single"""
 
-        pre_5 = self.NUM_TO_NUC[nuc_i_1]
-        post_3 = self.NUM_TO_NUC[nuc_1_j]
-        post_5 = self.NUM_TO_NUC[nuc_1_p]
-        pre_3 = self.NUM_TO_NUC[nuc_q_1]
+        pre_up = self.NUM_TO_NUC[nuc_i_1]
+        post_low = self.NUM_TO_NUC[nuc_1_j]
+        post_up = self.NUM_TO_NUC[nuc_1_p]
+        pre_low = self.NUM_TO_NUC[nuc_q_1]
         typ_end = self.NUM_TO_PAIR[nuc_i, nuc_j]
         typ_mid = self.NUM_TO_PAIR[nuc_p, nuc_q]
         lp_len_1 = p - i - 1
         lp_len_2 = j - q - 1
-        lp_len_lg, lp_len_st = max(lp_len_1, lp_len_2), min(lp_len_1, lp_len_2)
+        lp_len_lg, lp_len_st = lp_len_1, lp_len_2 if lp_len_1 > lp_len_2 else lp_len_2, lp_len_1
 
         if lp_len_lg == 0:
             #both lp_len_1 and lp_len_2 are 0
@@ -444,10 +444,22 @@ class Evaluate:
             #we have an internal loop
             if lp_len_st == 1: #this constitutes a 1*n loop 
                 if lp_len_lg == 1: #this is a 1*1 loop
-                    energy = self.source.in_loop_1x1[typ_end, typ_mid, pre_5, post_3]
+                    energy = self.source.in_loop_1x1[typ_end, typ_mid, pre_up, post_low]
                     return energy
                 if lp_len_lg == 2: #this is a 2 * 1 loop
-                    energy = self.source.in_loop_2x1[typ_end, typ_mid, 
+                    if lp_len_1 == 1:
+                        #lp_len_1 is shorter, lp_len_2 is longer
+                        energy = self.source.in_loop_2x1[typ_end, typ_mid, pre_up, pre_low, post_low]
+                    else:
+                        energy = self.source.in_loop_2x1[typ_mid, typ_end, pre_low, pre_up, post_up]
+                    return energy
+                else:
+                    #this is a 1 * n loop
+                    energy = self.source.internal_loop[lp_len_lg + 1] if lp_len_lg < MAX_LOOP else self.source.internal_loop[MAX_LOOP] + int(
+                        self.source.log_mult * jnp.log(lp_len_lg / MAX_LOOP)
+                    )
+                    energy += 
+
                 
 
 
