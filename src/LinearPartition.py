@@ -11,7 +11,6 @@ from functools import wraps
 import math
 import jax
 import jax.numpy as jnp 
-import time
 import scipy.constants as const
 
 #----------------------------------------------------------
@@ -67,48 +66,44 @@ INTERNAL_MAX_LENGTH = 30
 SYMMETRIC_MAX_LENGTH = 15
 ASYMMETRY_MAX_LENGTH = 28
 
-_HELIX_STACKING = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
-_ALLOWED_PAIRS = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
-_CACHE_SINGLE = jnp.zeros((SINGLE_MAX_LENGTH + 1, SINGLE_MAX_LENGTH + 1), dtype = float)
-
 class Evaluate:
-    def __init__(self, source = "Default") -> None:
+    def __init__(self, type = "Default", source = "Default") -> None:
         if source == "Default":
             self.source = Default
         elif source == "Eterna":
             self.source = Eterna
         else:
             raise ValueError("Error: Invalid source.")
+        self._HELIX_STACKING = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
+        self._ALLOWED_PAIRS = jnp.zeros((N_TYPE_NUC, N_TYPE_NUC), dtype = bool)
+        self._CACHE_SINGLE = jnp.zeros((SINGLE_MAX_LENGTH + 1, SINGLE_MAX_LENGTH + 1), dtype = float)
         self.initialize()
         self.initialize_cachesingle()
         
 
     def initialize_cachesingle(self) -> None:
-        global _CACHE_SINGLE
-
         for l_1 in range(SINGLE_MIN_LENGTH, SINGLE_MAX_LENGTH + 1):
             for l_2 in range(SINGLE_MIN_LENGTH, SINGLE_MAX_LENGTH + 1):
                 if l_1 == 0 and l_2 == 0:
                     continue
                 elif l_1 == 0:
-                    _CACHE_SINGLE[l_1, l_2] += self.source.bulge_length[l_2]
+                    self._CACHE_SINGLE[l_1, l_2] += self.source.bulge_length[l_2]
                 elif l_2 == 0:
-                    _CACHE_SINGLE[l_1, l_2] += self.source.bulge_length[l_1]
+                    self._CACHE_SINGLE[l_1, l_2] += self.source.bulge_length[l_1]
                 else:
-                    _CACHE_SINGLE[l_1, l_2] += self.source.internal_length[min(l_1 + l_2, INTERNAL_MAX_LENGTH)]
+                    self._CACHE_SINGLE[l_1, l_2] += self.source.internal_length[min(l_1 + l_2, INTERNAL_MAX_LENGTH)]
                     
                     if l_1 <= EXPLICIT_MAX_LENGTH and l_2 <= EXPLICIT_MAX_LENGTH:
                         idx = l_1 * EXPLICIT_MAX_LENGTH + l_2 if l_1 <= l_2 else l_2 * EXPLICIT_MAX_LENGTH + l_1
-                        _CACHE_SINGLE[l_1, l_2] += self.source.internal_explicit[idx]
+                        self._CACHE_SINGLE[l_1, l_2] += self.source.internal_explicit[idx]
 
                     if l_1 == l_2:
-                        _CACHE_SINGLE[l_1, l_2] += self.source.internal_symmetric_length[min(l_1, SYMMETRIC_MAX_LENGTH)]
+                        self._CACHE_SINGLE[l_1, l_2] += self.source.internal_symmetric_length[min(l_1, SYMMETRIC_MAX_LENGTH)]
                     else:
                         diff = abs(l_1 - l_2)
-                        _CACHE_SINGLE[l_1, l_2] += self.source.internal_asymmetry[min(diff, ASYMMETRY_MAX_LENGTH)]
+                        self._CACHE_SINGLE[l_1, l_2] += self.source.internal_asymmetry[min(diff, ASYMMETRY_MAX_LENGTH)]
 
     def initialize(self) -> None:
-        global _ALLOWED_PAIRS, _HELIX_STACKING
 
         allowed_pairs = [
             ('A', 'U'), ('U', 'A'),
@@ -117,7 +112,7 @@ class Evaluate:
         ]
         
         for a, b in allowed_pairs:
-            _ALLOWED_PAIRS[GET_ACGU_NUM(a), GET_ACGU_NUM(b)] = True
+            self._ALLOWED_PAIRS[GET_ACGU_NUM(a), GET_ACGU_NUM(b)] = True
 
         helix_pairs = [
             ('A', 'U', 'A', 'U'), ('A', 'U', 'C', 'G'), ('A', 'U', 'G', 'C'),
@@ -130,7 +125,8 @@ class Evaluate:
         ]
         
         for x, y, z, w in helix_pairs:
-            _HELIX_STACKING[GET_ACGU_NUM(x), GET_ACGU_NUM(y), GET_ACGU_NUM(z), GET_ACGU_NUM(w)] = True
+            self._HELIX_STACKING[GET_ACGU_NUM(x), GET_ACGU_NUM(y), 
+                                 GET_ACGU_NUM(z), GET_ACGU_NUM(w)] = True
 
     ### BEGIN: nucleotide based scores ###
     
@@ -268,7 +264,7 @@ class Evaluate:
         l_1, l_2 = p - i - 1, j - q - 1
 
         return sum(
-            _CACHE_SINGLE[l_1, l_2],
+            self._CACHE_SINGLE[l_1, l_2],
             self.base_pair_score(nuc_p, nuc_q),
             self.score_junction_B(i, j, nuc_i, nuc_i_1, nuc_j_1, nuc_j),
             self.score_junction_B(p, q, nuc_p, nuc_p_1, nuc_q_1, nuc_q),
@@ -279,7 +275,7 @@ class Evaluate:
                                         nuc_p_1: int, nuc_p: int, nuc_q: int, nuc_q_1: int) -> float:
         l_1, l_2 = p - i - 1, j - q - 1
         return sum(
-            _CACHE_SINGLE[l_1, l_2],
+            self._CACHE_SINGLE[l_1, l_2],
             self.base_pair_score(nuc_p, nuc_q),
             self.score_single_nuc(i, j, p, q, nuc_p_1, nuc_q_1)
         )
@@ -671,7 +667,9 @@ class BeamCKYParser:
                         back_pointer[i][j] = i_
         #back trace to find the secondary structure
         self.structure = self.back_trace_opt(0, self.seq_length - 1, back_pointer)
-
+    #there are multiple if loops in the original code that are not present in the current implementation
+    #ifdef lpv is not supported in the current implementation
+    #lpv = "Linear Partition Vienna", i.e. Linear Partition with Vienna Implementation
     def outside(self, next_pair: list[int]) -> None:
         evaluate = Evaluate(self.source)
         #initialize the bestC array
@@ -681,7 +679,6 @@ class BeamCKYParser:
             nuc_j = self.nucs[j]
             nuc_j_1 = self.nucs[j + 1] if j + 1 < self.seq_length else -1
 
-            beamstepH = self.bestH[j]
             beamstepMulti = self.bestMulti[j]
             beamstepP = self.bestP[j]
             beamstepM2 = self.bestM2[j]
@@ -756,7 +753,7 @@ class BeamCKYParser:
                                     self.bestP[q][p].beta + new_score
                                 )
 
-                                #TODO: Add Suppot for Vaxpress (#ifdef lpv)
+                                #TODO: Add Suppot for VienanaRNA (#ifdef lpv)
 
                             else:
                                 #calculate score for single branch
@@ -887,6 +884,17 @@ class BeamCKYParser:
         return threshold
     
     def parse(self) -> float:
-        pass
+        evaluate = Evaluate(self.source)
+        next_pair = [[]]
+        for nuc_i in range(N_TYPE_NUC):
+            #initialize next pair
+            next_pair[nuc_i].extend([-1] * self.seq_length)
+            next = -1
+            for j in range(self.seq_length - 1, -1, -1):
+                next_pair[nuc_i][j] = next
+                if evaluate.
+
+
+        
     
 
