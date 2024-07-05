@@ -83,7 +83,7 @@ class Evaluate:
             #import parameters
             from .Utils import energy_parameters
             self.source = energy_parameters
-            self.NUM_TO_NUC = [1, 2, 3, 4, 0, -1]
+            self.NUM_TO_NUC = jnp.array([1, 2, 3, 4, 0, -1])
             #original code equivalent
             ##define NUM_TO_NUC(x) (x==-1?-1:((x==4?0:(x+1))))
             self.NUM_TO_PAIR = jnp.array([
@@ -508,7 +508,7 @@ class Evaluate:
 
     ###BEGIN: Multi-Branch Loop Scores ###
 
-    def v_score_multi_stem(self, typ: int, pre: int, post: int,
+    def v_score_multi_paired(self, typ: int, pre: int, post: int,
                            dangle_mode: int) -> int: 
         """Original Code Equvialent: E_MLstem
         """
@@ -517,9 +517,9 @@ class Evaluate:
             if pre >= 0 and post >= 0: #if both are one of ACGUN
                 energy += self.source.multiloop_match[typ, pre, post]
             elif pre >= 0: #if post is out of range
-                energy += self.source.dangle5[typ][pre]
+                energy += self.source.dangle5[typ, pre]
             elif post >= 0: #if pre is out of range
-                energy += self.source.dangle3[typ][post]
+                energy += self.source.dangle3[typ, post]
         
         if typ > 2: #if typ is one of AU, UA, GU, UG (i.e. if typ contians uracil)
             energy += self.source.TerminalU
@@ -528,7 +528,7 @@ class Evaluate:
 
         return energy
 
-    def v_score_multi(self, i: int, j: int, k: int,
+    def v_score_mult_1nuc(self, i: int, j: int, k: int,
                         nuc_1_i: int, nuc_i: int, nuc_k: int, nuc_k_1: int,
                         length: int, dangle_mode: int) -> int: 
         p = i
@@ -541,14 +541,47 @@ class Evaluate:
 
         return energy
         
+    def v_score_multi_unpaired(self, i: int, j: int) -> int: 
+        return 0 
+    
+    def v_score_multi(self, i: int, j: int, 
+                      nuc_i: int, nuc_i_1: int, nuc_1_j: int, nuc_j: int, 
+                      length: int, dangle_mode: int) -> int:
+        typ = self.NUM_TO_PAIR[nuc_j, nuc_i]
+        pre = self.NUM_TO_NUC[nuc_i_1]
+        post = self.NUM_TO_NUC[nuc_1_j]
 
-
-    def v_score_multi_unpaired(): pass
-    def v_score_multi(): pass
+        energy = self.v_score_multi_paired(
+            typ, pre, post, dangle_mode
+            ) + self.source.MULTLOOP_CLS 
+        
+        return energy
 
     ###END: Multi-Branch Loop Scores ###
 
     ###BEGIN: External Loop Scores ###
+
+    def v_score_external_paired(self, i: int, j: int, 
+                                nuc_1_i: int, nuc_i: int, nuc_j: int, nuc_j_1: int,
+                                length: int, dangle_mode: int) -> int:
+        typ = self.NUM_TO_PAIR[nuc_i, nuc_j]
+        prev = self.NUM_TO_NUC[nuc_1_i]
+        post = self.NUM_TO_NUC[nuc_j_1]
+        energy = 0
+        if dangle_mode != 0:
+            if prev >= 0 and post >= 0:
+                energy += self.source.exterior_match[typ, prev, post]
+            elif prev >= 0:
+                energy += self.source.dangle5[typ, prev]
+            elif post >= 0:
+                energy += self.source.dangle3[typ, post]
+
+        if typ > 2:
+            energy += self.source.TerminalU
+        return energy
+        
+    def v_score_external_unpaired(self, i: int, j: int) -> int:
+        return 0
 
     ###END: External Loop Scores ###
     
