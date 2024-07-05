@@ -338,7 +338,7 @@ class Evaluate:
 
     ###BEGIN: Hairpin, Single Nucleotide Scores ###
     
-    def v_find_stable_hp(self, seq: str, seq_length: int):
+    def v_find_stable_hp(self, seq: str, seq_length: int) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         if_tetraloops = jnp.full(max(seq_length - 5, 0), -1)
         if_triloops= jnp.full(max(seq_length - 4, 0), -1)
         if_hexaloops = jnp.full(max(seq_length - 7, 0), -1)
@@ -357,10 +357,11 @@ class Evaluate:
                 loop = seq[i: i + 8]
                 if loop in self.source.hexaloops:
                     if_hexaloops[i] = list(self.source.hexaloops.keys()).index(loop)
+        return if_tetraloops, if_hexaloops, if_triloops
     
     def v_hairpin_score(self, i: int, j: int,
                         nuc_i: int, nuc_i_1: int, nuc_1_j: int, nuc_j: int,
-                        tetra_hex_tri_index = -1) -> float:
+                        tetra_hex_tri_index = -1) -> int:
         '''Returns the score of a hairpin loop.
         Configuration Diagram
         5'- i i_1 ..(hairpin).. 1_j j -3'
@@ -377,7 +378,7 @@ class Evaluate:
         post = self.NUM_TO_NUC[nuc_1_j]
 
         energy = self.source.hairpins[size] if size <= HAIRPIN_MAX_LENGTH else self.source.hairpins[HAIRPIN_MAX_LENGTH] + int(
-            self.source.log_mult * jnp.log(size / HAIRPIN_MAX_LENGTH)
+            self.source.LOG_MULT * jnp.log(size / HAIRPIN_MAX_LENGTH)
         )
 
         if size < 3: return energy
@@ -399,7 +400,7 @@ class Evaluate:
 
     def v_score_single(self, i: int, j: int, p: int, q: int,
                        nuc_i: int, nuc_i_1: int, nuc_1_j: int, nuc_j: int,
-                       nuc_1_p: int, nuc_p: int, nuc_q: int, nuc_q_1: int) -> float:
+                       nuc_1_p: int, nuc_p: int, nuc_q: int, nuc_q_1: int) -> int:
         """
         Returns the score of a single nucleotide loop.
         Configuration Diagram
@@ -433,13 +434,16 @@ class Evaluate:
             #3'-jq-5'
             #this constitutes a bulge
             energy = self.source.hairpins[n_long] if n_long <= MAX_LOOP else self.source.hairpins[MAX_LOOP] + int(
-                self.source.log_mult * jnp.log(n_long / MAX_LOOP)
+                self.source.LOG_MULT * jnp.log(n_long / MAX_LOOP)
             )
             if n_long == 1: #this is nearly a stack, stack energy should be added
                 energy += self.source.stacks[typ_end, typ_mid]
             else:
                 if typ_end > 2: energy += self.source.TerminalU
                 if typ_mid > 2: energy += self.source.TerminalU
+
+            return energy
+        
         else: 
             #we have an internal loop
             if n_short == 1: #this constitutes a 1*n loop 
@@ -450,32 +454,95 @@ class Evaluate:
                     if n_up == 1:
                         #n_up is shorter, n_low is longer
                         energy = self.source.in_loop_2x1[typ_end, typ_mid, pre_up, pre_low, post_low]
-                    else:
+                    else: 
+                        #n_low is shorter, n_up is longer
                         energy = self.source.in_loop_2x1[typ_mid, typ_end, pre_low, pre_up, post_up]
+
                     return energy
                 else:
                     #this is a 1 * n loop
                     energy = self.source.internal_loop[n_long + 1] if n_long < MAX_LOOP else self.source.internal_loop[MAX_LOOP] + int(
-                        self.source.log_mult * jnp.log(n_long / MAX_LOOP)
+                        self.source.LOG_MULT * jnp.log(n_long / MAX_LOOP)
                     )
-                    energy += 
+                    energy += min(self.source.MAX_INTERNAL, (n_long - n_short)*self.source.INTERNAL_MULT)
 
+                    energy += self.source.internal_1xn_correction[
+                                typ_end, pre_up, post_low
+                                ] + self.source.internal_1xn_correction[
+                                    typ_mid, pre_low, post_up
+                                ]
+                    
+                    return energy
                 
+            elif n_short == 2: #this constitutes a 2 * n loop (n > 2)
+                if n_long == 2: #this is a 2 * 2 loop
+                    energy = self.source.in_loop_2x2[typ_end, typ_mid, pre_up, post_up, pre_low, post_low]
+                    return energy
+                elif n_long == 3: #this is a 2 * 3 loop
+                    energy = self.source.internal_loop[3 + 2] + self.source.INTERNAL_MULT * (3 - 2)
+                    energy += self.source.internal_2x3_correction[
+                                typ_end, pre_up, post_low
+                                ]+ self.source.internal_2x3_correction[
+                                    typ_mid, pre_low, post_up
+                                ]
+                    return energy
+                
+                #else: continue to the general case
+            
+            #general case (no else here!)
 
+            n_tot = n_long + n_short
+            energy = self.source.internal_loop[n_tot] if n_tot < MAX_LOOP else self.source.internal_loop[MAX_LOOP] + int(
+                self.source.LOG_MULT * jnp.log(n_tot / MAX_LOOP)
+            )
 
+            energy += min(self.source.MAX_INTERNAL, (n_long - n_short)*self.source.INTERNAL_MULT)
 
-        
-
-
-
+            energy += self.source.internal_match[
+                        typ_end, pre_up, post_low
+                        ] + self.source.internal_match[
+                            typ_mid, pre_low, post_up
+                        ]
+        return energy
     ###END: Hairpin, Single Nucleotide Scores ###
 
     ###BEGIN: Multi-Branch Loop Scores ###
 
-    def v_score_multi_stem(): 
+    def v_score_multi_stem(self, typ: int, pre: int, post: int,
+                           dangle_mode: int) -> int: 
         """Original Code Equvialent: E_MLstem
         """
-    def v_score_M1(): pass
+        energy = 0
+        if dangle_mode != 0:
+            if pre >= 0 and post >= 0: #if both are one of ACGUN
+                energy += self.source.multiloop_match[typ, pre, post]
+            elif pre >= 0: #if post is out of range
+                energy += self.source.dangle5[typ][pre]
+            elif post >= 0: #if pre is out of range
+                energy += self.source.dangle3[typ][post]
+        
+        if typ > 2: #if typ is one of AU, UA, GU, UG (i.e. if typ contians uracil)
+            energy += self.source.TerminalU
+        
+        energy += self.source.MULTLOOP_IN
+
+        return energy
+
+    def v_score_multi(self, i: int, j: int, k: int,
+                        nuc_1_i: int, nuc_i: int, nuc_k: int, nuc_k_1: int,
+                        length: int, dangle_mode: int) -> int: 
+        p = i
+        q = k
+        typ = self.NUM_TO_PAIR[nuc_i, nuc_k]
+        pre = self.NUM_TO_NUC[nuc_1_i]
+        post = self.NUM_TO_NUC[nuc_k_1]
+        
+        energy = self.v_score_multi_stem(typ, pre, post, dangle_mode)
+
+        return energy
+        
+
+
     def v_score_multi_unpaired(): pass
     def v_score_multi(): pass
 
