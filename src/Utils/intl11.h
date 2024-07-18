@@ -1,11 +1,11 @@
 #ifndef VIE_INF
-#define VIE_INF 999999999
+#define VIE_INF 999999999.0
 #endif
 #ifndef NBPAIRS
 #define NBPAIRS 7
 #endif
 
-int int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
+double int11_37[NBPAIRS+1][NBPAIRS+1][5][5] =
 {{{{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
   ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
   ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}

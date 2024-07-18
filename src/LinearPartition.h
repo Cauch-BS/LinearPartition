@@ -25,14 +25,14 @@
 using namespace std;
 
 #ifdef lpv
-  typedef float pf_type;
+  typedef double pf_type;
 #else
   typedef double pf_type;
 #endif
 
 
 #ifdef lpv
-  typedef int value_type;
+  typedef double value_type;
   #define VALUE_MIN numeric_limits<double>::lowest()
 #else
   typedef double value_type;

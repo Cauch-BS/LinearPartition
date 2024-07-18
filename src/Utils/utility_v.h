@@ -25,8 +25,8 @@
 
 #define MAXLOOP 30
 
-inline int MIN2(int a, int b) {if (a <= b)return a;else return b;}
-inline int MAX2(int a, int b) {if (a >= b)return a;else return b;}
+inline double MIN2(double a, double b) {if (a <= b)return a;else return b;}
+inline double MAX2(double a, double b) {if (a >= b)return a;else return b;}
 
 /* void v_initialize() */
 /* { */
@@ -73,13 +73,13 @@ inline void v_init_tetra_hex_tri(std::string& seq, int seq_length, std::vector<i
     return;
 }
 
-inline int v_score_hairpin(int i, int j, int nuci, int nuci1, int nucj_1, int nucj, int tetra_hex_tri_index = -1) {
+inline double v_score_hairpin(int i, int j, int nuci, int nuci1, int nucj_1, int nucj, int tetra_hex_tri_index = -1) {
     int size = j-i-1;
     int type = NUM_TO_PAIR(nuci, nucj);
     int si1 = NUM_TO_NUC(nuci1);
     int sj1 = NUM_TO_NUC(nucj_1);
 
-    int energy;
+    double energy;
 
     if(size <= 30)
         energy = hairpin37[size];
@@ -106,7 +106,7 @@ inline int v_score_hairpin(int i, int j, int nuci, int nuci1, int nucj_1, int nu
     return energy;
 }
 
-inline int v_score_single(int i, int j, int p, int q,
+inline double v_score_single(int i, int j, int p, int q,
                         int nuci, int nuci1, int nucj_1, int nucj,
                         int nucp_1, int nucp, int nucq, int nucq1){
     int si1 = NUM_TO_NUC(nuci1);
@@ -117,7 +117,8 @@ inline int v_score_single(int i, int j, int p, int q,
     int type_2 = NUM_TO_PAIR(nucq, nucp);
     int n1 = p-i-1;
     int n2 = j-q-1;
-    int nl, ns, u, energy;
+    int nl, ns, u;
+    double energy;
     energy = 0;
 
     if (n1>n2) { nl=n1; ns=n2;}
@@ -177,8 +178,8 @@ inline int v_score_single(int i, int j, int p, int q,
 }
 
 // multi_loop
-inline int E_MLstem(int type, int si1, int sj1, int dangle_mode) {
-    int energy = 0;
+inline double E_MLstem(int type, int si1, int sj1, int dangle_mode) {
+    double energy = 0;
 
     if (dangle_mode != 0) {
       if(si1 >= 0 && sj1 >= 0){
@@ -201,7 +202,7 @@ inline int E_MLstem(int type, int si1, int sj1, int dangle_mode) {
     return energy;
 }
 
-inline int v_score_M1(int i, int j, int k, int nuci_1, int nuci, int nuck, int nuck1, int len, int dangle_mode) {
+inline double v_score_M1(int i, int j, int k, int nuci_1, int nuci, int nuck, int nuck1, int len, int dangle_mode) {
     int p = i;
     int q = k;
     int tt = NUM_TO_PAIR(nuci, nuck);

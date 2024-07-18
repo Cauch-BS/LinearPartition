@@ -8,7 +8,7 @@
 
 #ifndef VIE_INF
 // #define VIE_INF 999999999
-#define VIE_INF 10000000 // to be the same as in vienna
+#define VIE_INF 10000000.0 // to be the same as in vienna
 #endif
 #ifndef NBPAIRS
 #define NBPAIRS 7
@@ -18,19 +18,19 @@
 //int special_hp = 1;
 
 double lxc37=107.856;
-int ML_intern37=-90;
+double ML_intern37=-90;
 // int ML_intern37=-60;
-int ML_closing37=930;
-int ML_BASE37=0;
-int MAX_NINIO=300;
-int ninio37=60;
-int TerminalAU37=50;  // lhuang: outermost pair is AU or GU; also used in tetra_loop triloop
+double ML_closing37=930;
+double ML_BASE37=0;
+double MAX_NINIO=300;
+double ninio37=60;
+double TerminalAU37=50;  // lhuang: outermost pair is AU or GU; also used in tetra_loop triloop
 
 char Triloops[241] =
     "CAACG "
     "GUUAC "
     ;
-int Triloop37[2] = {   680,   690};
+double Triloop37[2] = {   680,   690};
 
 char Tetraloops[281] =
     "CAACGG "
@@ -51,7 +51,7 @@ char Tetraloops[281] =
     "CUUUGG "
     ;
 
-int Tetraloop37[16] = {   550,   330,   370,   340,   350,   360,   370,   250,   360,   280,   370,   270,   280,   350,   370,   370};
+double Tetraloop37[16] = {   550,   330,   370,   340,   350,   360,   370,   250,   360,   280,   370,   270,   280,   350,   370,   370};
 
 char Hexaloops[361] =
     "ACAGUACU "
@@ -59,9 +59,9 @@ char Hexaloops[361] =
     "ACAGUGCU "
     "ACAGUGUU "
     ;
-int Hexaloop37[4] = {   280,   360,   290,   180};
+double Hexaloop37[4] = {   280,   360,   290,   180};
 
-int stack37[NBPAIRS+1][NBPAIRS+1] =
+double stack37[NBPAIRS+1][NBPAIRS+1] =
     //                CG    GC      GU    UG     AU     UA     NN     
     {{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
      /*CG*/,{   VIE_INF,  -240,  -330,  -210,  -140,  -210,  -210,  -140}
@@ -72,11 +72,11 @@ int stack37[NBPAIRS+1][NBPAIRS+1] =
      /*UA*/,{   VIE_INF,  -210,  -240,  -130,  -100,   -90,  -130,   -90}
      /*NN*/,{   VIE_INF,  -140,  -150,   130,    30,   -60,   -90,   130}};
 
-int hairpin37[31] = {   VIE_INF,   VIE_INF,   VIE_INF,   540,   560,   570,   540,   600,   550,   640,   650,   660,   670,   680,   690,   690,   700,   710,   710,   720,   720,   730,   730,   740,   740,   750,   750,   750,   760,   760,   770};
-int bulge37[31] = {   VIE_INF,   380,   280,   320,   360,   400,   440,   460,   470,   480,   490,   500,   510,   520,   530,   540,   540,   550,   550,   560,   570,   570,   580,   580,   580,   590,   590,   600,   600,   600,   610};
-int internal_loop37[31] = {   VIE_INF,   VIE_INF,   100,   100,   110,   200,   200,   210,   230,   240,   250,   260,   270,   280,   290,   290,   300,   310,   310,   320,   330,   330,   340,   340,   350,   350,   350,   360,   360,   370,   370};
+double hairpin37[31] = {   VIE_INF,   VIE_INF,   VIE_INF,   540,   560,   570,   540,   600,   550,   640,   650,   660,   670,   680,   690,   690,   700,   710,   710,   720,   720,   730,   730,   740,   740,   750,   750,   750,   760,   760,   770};
+double bulge37[31] = {   VIE_INF,   380,   280,   320,   360,   400,   440,   460,   470,   480,   490,   500,   510,   520,   530,   540,   540,   550,   550,   560,   570,   570,   580,   580,   580,   590,   590,   600,   600,   600,   610};
+double internal_loop37[31] = {   VIE_INF,   VIE_INF,   100,   100,   110,   200,   200,   210,   230,   240,   250,   260,   270,   280,   290,   290,   300,   310,   310,   320,   330,   330,   340,   340,   350,   350,   350,   360,   360,   370,   370};
 
-int mismatchI37[NBPAIRS+1][5][5] =
+double mismatchI37[NBPAIRS+1][5][5] =
 {{{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
@@ -126,7 +126,7 @@ int mismatchI37[NBPAIRS+1][5][5] =
  ,{    70,    70,    70,    70,    10}
  }};
 
-int mismatchH37[NBPAIRS+1][5][5] =
+double mismatchH37[NBPAIRS+1][5][5] =
 {{{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
@@ -178,7 +178,7 @@ int mismatchH37[NBPAIRS+1][5][5] =
  ,{   -10,   -10,   -10,   -10,   -90}
  }};
 
-int mismatchM37[NBPAIRS+1][5][5] =
+double mismatchM37[NBPAIRS+1][5][5] =
 {{ /* NP.. */
   {   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
@@ -236,7 +236,7 @@ int mismatchM37[NBPAIRS+1][5][5] =
  ,{   -50,   -80,   -50,   -80,   -50}
  }};
 
-int mismatch1nI37[NBPAIRS+1][5][5] =
+double mismatch1nI37[NBPAIRS+1][5][5] =
 {{{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
@@ -286,7 +286,7 @@ int mismatch1nI37[NBPAIRS+1][5][5] =
  ,{    70,    70,    70,    70,    70}
  }};
 
-int mismatch23I37[NBPAIRS+1][5][5] =
+double mismatch23I37[NBPAIRS+1][5][5] =
 {{{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
@@ -336,7 +336,7 @@ int mismatch23I37[NBPAIRS+1][5][5] =
  ,{    70,    70,    70,    70,    40}
  }};
 
-int mismatchExt37[NBPAIRS+1][5][5] =
+double mismatchExt37[NBPAIRS+1][5][5] =
 {{ /* NP.. */
   {   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
  ,{   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF}
@@ -395,7 +395,7 @@ int mismatchExt37[NBPAIRS+1][5][5] =
  }};
 
 /* dangle5 */
-int dangle5_37[NBPAIRS+1][5] =
+double dangle5_37[NBPAIRS+1][5] =
     { /*           N      A      C      G      U */
         /* NP */ {   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF},
         /* CG */ {   -10,   -50,   -30,   -20,   -10},
@@ -408,7 +408,7 @@ int dangle5_37[NBPAIRS+1][5] =
     };
 
 /* dangle3 */
-int dangle3_37[NBPAIRS+1][5] =
+double dangle3_37[NBPAIRS+1][5] =
     { /*           N      A      C      G      U */
         /* NP */ {   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF},
         /* CG */ {   -40,  -110,   -40,  -130,   -60},
