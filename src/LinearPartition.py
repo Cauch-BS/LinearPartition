@@ -45,7 +45,8 @@ def memoize_for_jit(f: Callable) -> Callable:
 
 
 #From utils.h
-GET_ACGU_NUM = lambda x: {'A': 0, 'C': 1, 'G': 2, 'U': 3}.get(x, 4)
+def GET_ACGU_NUM(x):
+    return {'A': 0, 'C': 1, 'G': 2, 'U': 3}.get(x, 4)
 N_TYPE_NUC = 5
 N_TYPE_NUC_DOUBLE = 25
 N_TYPE_NUC_TRIPLE = 125
@@ -200,7 +201,8 @@ class Evaluate:
     def internal_explicit_score(self, length1: int, length2: int) -> float:
         length1 = min(length1, EXPLICIT_MAX_LENGTH)
         length2 = min(length2, EXPLICIT_MAX_LENGTH)
-        if length1 > length2: length1, length2 = length2, length1
+        if length1 > length2: 
+            length1, length2 = length2, length1
         return self.source.internal_explicit(length1 * N_TYPE_NUC + length2)
 
     def intenal_symmetric_score(self, length: int) -> float:
@@ -381,7 +383,8 @@ class Evaluate:
             self.source.LOG_MULT * jnp.log(size / HAIRPIN_MAX_LENGTH)
         )
 
-        if size < 3: return energy
+        if size < 3: 
+            return energy
 
         if size == 4 and tetra_hex_tri_index > -1:
             return list(self.source.tetraloops.values())[tetra_hex_tri_index]
@@ -439,8 +442,10 @@ class Evaluate:
             if n_long == 1: #this is nearly a stack, stack energy should be added
                 energy += self.source.stacks[typ_end, typ_mid]
             else:
-                if typ_end > 2: energy += self.source.TerminalU
-                if typ_mid > 2: energy += self.source.TerminalU
+                if typ_end > 2: 
+                    energy += self.source.TerminalU
+                if typ_mid > 2: 
+                    energy += self.source.TerminalU
 
             return energy
         
@@ -531,8 +536,6 @@ class Evaluate:
     def v_score_mult_1nuc(self, i: int, j: int, k: int,
                         nuc_1_i: int, nuc_i: int, nuc_k: int, nuc_k_1: int,
                         length: int, dangle_mode: int) -> int: 
-        p = i
-        q = k
         typ = self.NUM_TO_PAIR[nuc_i, nuc_k]
         pre = self.NUM_TO_NUC[nuc_1_i]
         post = self.NUM_TO_NUC[nuc_k_1]
@@ -699,13 +702,17 @@ def quickselect(scores: list[(float, int)],
         float: The value of the kth smallest element.
     """
     
-    if lower == upper: return scores[lower][0]
+    if lower == upper: 
+        return scores[lower][0]
     
     split = quickselect_partition(scores, lower, upper)
     
-    if k == split: return scores[k][0]
-    elif k < split: return quickselect(scores, lower, split - 1, k)
-    else: return quickselect(scores, split + 1, upper, k)
+    if k == split: 
+        return scores[k][0]
+    elif k < split: 
+        return quickselect(scores, lower, split - 1, k)
+    else: 
+        return quickselect(scores, split + 1, upper, k)
 
 #----------------------------------------------------------
 #From LinearPartition.h
@@ -831,8 +838,10 @@ class BeamCKYParser:
             temp_prob_inside = state.alpha + state.beta - viterbi.alpha #viterbi.alpha is the best score
             if temp_prob_inside > -9.91152:
                 prob = fast_exp(temp_prob_inside)
-                if prob > 1.0: prob = 1.0
-                if prob < self.bpp_cutoff: prob = 0.0
+                if prob > 1.0: 
+                    prob = 1.0
+                if prob < self.bpp_cutoff: 
+                    prob = 0.0
                 self.Pij = self.Pij.at[i + 1, j + 1].set(prob)
 
     #returns the secondary structure of the sequence between i and j
@@ -854,7 +863,8 @@ class BeamCKYParser:
         elif back_pointer[i, j] != 0:
             k = back_pointer[i, j]
             assert (k + 1 > 0) and (k + 1 < self.seq_length + 1), "Error: back_pointer out of range."
-            if k == j: temp = ""
+            if k == j: 
+                temp = ""
             else:
                 temp = self.back_trace(k + 1, j, back_pointer)
             
@@ -937,9 +947,12 @@ class BeamCKYParser:
                 partition_slices.at[i, j].set(partitions[i] + partition_slices[i+1, j]) #dynamic partition calculation
                 back_pointer = back_pointer.at[i, j].set(-1)
                 for i_ in paired[i]:
-                    if i_ > j: break
-                    elif i_ < j: temp_part_i_j = partition_slices[i_ + 1, j]
-                    else: temp_part_i_j = 0
+                    if i_ > j: 
+                        break
+                    elif i_ < j: 
+                        temp_part_i_j = partition_slices[i_ + 1, j]
+                    else: 
+                        temp_part_i_j = 0
                     temp_prob = 2 * self.gamma * probs[i, i_] + partition_slices[i + 1][i_ -1] + temp_part_i_j
                     if temp_prob > partition_slices[i][j]:
                         partition_slices[i][j] = temp_prob
@@ -1150,7 +1163,8 @@ class BeamCKYParser:
             new_alpha = state.alpha + new_score
             self.scores.append((new_alpha, i))
         
-        if len(self.scores) <= self.beam: return float('-inf')
+        if len(self.scores) <= self.beam: 
+            return float('-inf')
 
         threshold = quickselect(self.scores, 0, len(self.scores) - 1, 
                                 len(self.scores) - self.beam
@@ -1171,7 +1185,8 @@ class BeamCKYParser:
             next = -1
             for j in range(self.seq_length - 1, -1, -1):
                 next_pair[nuc_i][j] = next
-                if evaluate: pass
+                if evaluate: 
+                    pass
 
 
         

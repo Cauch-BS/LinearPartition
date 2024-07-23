@@ -357,9 +357,9 @@ hairpin_match = jnp.full(
 
 ### BEGIN: CONSIDERATION FOR MULTIBRANCH LOOPS ###
 
-MULTLOOP_IN = -90
-MULTLOOP_CLS = 930
-MULTLOOP_BASE = 0
+MULTLOOP_IN = -90.0
+MULTLOOP_CLS = 930.0
+MULTLOOP_BASE = 0.0
 
 multiloop_match = jnp.full(
     shape = (8, 5, 5),
