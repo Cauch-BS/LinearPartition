@@ -9,7 +9,11 @@
 #include <stdio.h> 
 #include <set>
 #include <algorithm>
+#include <map>
+#include <stack>
+#include <time.h>
 #include "LinearPartition.h"
+
 
 using namespace std;
 

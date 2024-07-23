@@ -84,7 +84,7 @@ inline double v_score_hairpin(int i, int j, int nuci, int nuci1, int nucj_1, int
     if(size <= 30)
         energy = hairpin37[size];
     else
-        energy = hairpin37[30] + (int)(lxc37*log((size)/30.));
+        energy = hairpin37[30] + (lxc37*log((size)/30.));
 
     if(size < 3) return energy; /* should only be the case when folding alignments */
 #ifdef SPECIAL_HP
@@ -129,7 +129,7 @@ inline double v_score_single(int i, int j, int p, int q,
 
     if (ns==0) {                      /* bulge */
         energy = (nl<=MAXLOOP)?bulge37[nl]:
-      (bulge37[30]+(int)(lxc37*log(nl/30.)));
+      (bulge37[30]+(lxc37*log(nl/30.)));
     if (nl==1) energy += stack37[type][type_2];
     else {
       if (type>2) energy += TerminalAU37;
@@ -149,7 +149,7 @@ inline double v_score_single(int i, int j, int p, int q,
         return energy;
       }
       else {  /* 1xn loop */
-        energy = (nl+1<=MAXLOOP)?(internal_loop37[nl+1]) : (internal_loop37[30]+(int)(lxc37*log((nl+1)/30.)));
+        energy = (nl+1<=MAXLOOP)?(internal_loop37[nl+1]) : (internal_loop37[30]+(lxc37*log((nl+1)/30.)));
         energy += MIN2(MAX_NINIO, (nl-ns)*ninio37);
         energy += mismatch1nI37[type][si1][sj1] + mismatch1nI37[type_2][sq1][sp1];
         return energy;
@@ -167,7 +167,7 @@ inline double v_score_single(int i, int j, int p, int q,
     }
     { /* generic interior loop (no else here!)*/
       u = nl + ns;
-      energy = (u <= MAXLOOP) ? (internal_loop37[u]) : (internal_loop37[30]+(int)(lxc37*log((u)/30.)));
+      energy = (u <= MAXLOOP) ? (internal_loop37[u]) : (internal_loop37[30]+(lxc37*log((u)/30.)));
 
       energy += MIN2(MAX_NINIO, (nl-ns)*ninio37);
 
@@ -213,11 +213,11 @@ inline double v_score_M1(int i, int j, int k, int nuci_1, int nuci, int nuck, in
 
 }
 
-inline int v_score_multi_unpaired(int i, int j) {
+inline double v_score_multi_unpaired(int i, int j) {
     return 0;
 }
 
-inline int v_score_multi(int i, int j, int nuci, int nuci1, int nucj_1, int nucj, int len, int dangle_mode) {
+inline double v_score_multi(int i, int j, int nuci, int nuci1, int nucj_1, int nucj, int len, int dangle_mode) {
     int tt = NUM_TO_PAIR(nucj, nuci);
     int si1 = NUM_TO_NUC(nuci1);
     int sj1 = NUM_TO_NUC(nucj_1);
@@ -226,7 +226,7 @@ inline int v_score_multi(int i, int j, int nuci, int nuci1, int nucj_1, int nucj
 }
 
 // exterior_loop
-inline int v_score_external_paired(int i, int j, int nuci_1, int nuci, int nucj, int nucj1, int len, int dangle_mode) {
+inline double v_score_external_paired(int i, int j, int nuci_1, int nuci, int nucj, int nucj1, int len, int dangle_mode) {
     int type = NUM_TO_PAIR(nuci, nucj);
     int si1 = NUM_TO_NUC(nuci_1);
     int sj1 = NUM_TO_NUC(nucj1);
@@ -248,7 +248,7 @@ inline int v_score_external_paired(int i, int j, int nuci_1, int nuci, int nucj,
   return energy;
 }
 
-inline int v_score_external_unpaired(int i, int j) {
+inline double v_score_external_unpaired(int i, int j) {
     return 0;
 }
 
