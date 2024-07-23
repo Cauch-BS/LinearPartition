@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
+import os
 
 TerminalU = 50
 LOG_MULT = 107.856
@@ -61,9 +62,10 @@ internal_loop = jnp.array([ # for 1 * n loops (1 * 1 and 1 * 2 loops are conside
 MAX_INTERNAL = 300
 INTERNAL_MULT = 60
 
-in_loop_1x1 = jnp.array(np.load('in_loop_1x1.npy'))
-in_loop_2x1 = jnp.array(np.load('in_loop_2x1.npy'))
-in_loop_2x2 = jnp.array(np.load('in_loop_2x2.npy'))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+in_loop_1x1 = jnp.array(np.load(os.path.join(current_dir, 'in_loop_1x1.npy')))
+in_loop_2x1 = jnp.array(np.load(os.path.join(current_dir, 'in_loop_2x1.npy')))
+in_loop_2x2 = jnp.array(np.load(os.path.join(current_dir, 'in_loop_2x2.npy')))
 
 ################# 5'XY...ZW3' -> Contribution of X=Y and mismatched Z, W to Free Energy #################
 
@@ -144,14 +146,6 @@ internal_1xn_correction =jnp.full(
     fill_value = VIE_INF
 ).at[1:].set(
     jnp.array([
-        [
-            [   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF],
-            [   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF],
-            [   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF],
-            [   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF],
-            [   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF,   VIE_INF]
-        ],
-
         [
             [     0,     0,     0,     0,     0],
             [     0,     0,     0,   -50,     0],
