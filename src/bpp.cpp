@@ -259,7 +259,7 @@ void BeamCKYParser::PairProb_MEA(string & seq) {
 
     auto structure = back_trace(0,seq_length-1, back_pointer);
 
-    if (!bpseq){
+    if __mea_hook__{
         if(!mea_file_index.empty()) {
             FILE *fptr = fopen(mea_file_index.c_str(), "w"); 
             if (fptr == NULL) { 
