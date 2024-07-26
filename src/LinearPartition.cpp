@@ -104,14 +104,14 @@ void BeamCKYParser::postprocess() {
 
 double BeamCKYParser::parse(string& seq) {
       
-    struct timeval parse_starttime, parse_endtime;
+    struct timeval parse_starttime, parse_endtime; // 
 
-    gettimeofday(&parse_starttime, NULL);
+    gettimeofday(&parse_starttime, NULL); //
 
-    prepare(static_cast<unsigned>(seq.length()));
+    prepare(static_cast<unsigned>(seq.length()));   
 
-    for (int i = 0; i < seq_length; ++i)
-        nucs[i] = GET_ACGU_NUM(seq[i]);
+    for (int i = 0; i < seq_length; ++i) //
+        nucs[i] = GET_ACGU_NUM(seq[i]); //
 
     vector<int> next_pair[NOTON];
     {
